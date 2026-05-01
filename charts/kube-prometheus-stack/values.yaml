@@ -8,6 +8,14 @@ kube-prometheus-stack:
       enabled: true
       storageClassName: local-path
       size: 2Gi
+    # initChownData disabled: local-path PVs don't allow the chown init container to run.
+    # fsGroup 472 (grafana uid) ensures the kernel sets correct group ownership at mount time.
+    initChownData:
+      enabled: false
+    securityContext:
+      runAsUser: 472
+      runAsGroup: 472
+      fsGroup: 472
     # Retrieve admin password: kubectl get secret -n monitoring kube-prometheus-stack-grafana -o jsonpath='{.data.admin-password}' | base64 -d
 
   # Prometheus — NodePort 30900 for direct PromQL access
