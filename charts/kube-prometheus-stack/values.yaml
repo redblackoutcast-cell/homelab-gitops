@@ -38,8 +38,8 @@ kube-prometheus-stack:
   # Secret 'alertmanager-main' in namespace 'monitoring' holds alertmanager.yaml
   # To update: kubectl edit secret alertmanager-main -n monitoring, then rollout restart
   alertmanager:
-    alertmanagerConfigSecret: alertmanager-main
     alertmanagerSpec:
+      configSecret: alertmanager-main
       storage:
         volumeClaimTemplate:
           spec:
