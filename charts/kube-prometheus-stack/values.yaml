@@ -1,0 +1,43 @@
+kube-prometheus-stack:
+  # Grafana — exposed on NodePort 30300
+  grafana:
+    service:
+      type: NodePort
+      nodePort: 30300
+    persistence:
+      enabled: true
+      storageClassName: local-path
+      size: 2Gi
+    # Retrieve admin password: kubectl get secret -n monitoring kube-prometheus-stack-grafana -o jsonpath='{.data.admin-password}' | base64 -d
+
+  # Prometheus — NodePort 30900 for direct PromQL access
+  prometheus:
+    service:
+      type: NodePort
+      nodePort: 30900
+    prometheusSpec:
+      retention: 30d
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            storageClassName: local-path
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: 20Gi
+
+  # Alertmanager — ClusterIP only for now; alerts wired up separately
+  alertmanager:
+    alertmanagerSpec:
+      storage:
+        volumeClaimTemplate:
+          spec:
+            storageClassName: local-path
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: 1Gi
+
+  # node-exporter runs as a DaemonSet — picks up host metrics automatically
+  prometheus-node-exporter:
+    enabled: true
