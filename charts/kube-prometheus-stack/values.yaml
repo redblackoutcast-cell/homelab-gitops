@@ -34,8 +34,11 @@ kube-prometheus-stack:
               requests:
                 storage: 20Gi
 
-  # Alertmanager — ClusterIP only for now; alerts wired up separately
+  # Alertmanager — config loaded from k8s Secret (webhook URL kept out of Git)
+  # Secret 'alertmanager-main' in namespace 'monitoring' holds alertmanager.yaml
+  # To update: kubectl edit secret alertmanager-main -n monitoring, then rollout restart
   alertmanager:
+    alertmanagerConfigSecret: alertmanager-main
     alertmanagerSpec:
       storage:
         volumeClaimTemplate:
