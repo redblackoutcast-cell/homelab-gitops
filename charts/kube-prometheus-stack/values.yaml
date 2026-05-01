@@ -52,3 +52,12 @@ kube-prometheus-stack:
   # node-exporter runs as a DaemonSet — picks up host metrics automatically
   prometheus-node-exporter:
     enabled: true
+
+  # k3s embeds these components — they don't expose standard metrics ports.
+  # Disable to prevent false-positive "Down" alerts.
+  kubeScheduler:
+    enabled: false
+  kubeControllerManager:
+    enabled: false
+  kubeProxy:
+    enabled: false
