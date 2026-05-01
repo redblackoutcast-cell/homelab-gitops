@@ -33,6 +33,22 @@ kube-prometheus-stack:
             resources:
               requests:
                 storage: 20Gi
+      additionalScrapeConfigs:
+        - job_name: node-exporter-external
+          static_configs:
+            - targets: ['192.168.0.201:9100']
+              labels: {hostname: JBNAS01, role: nas}
+            - targets: ['192.168.0.203:9100']
+              labels: {hostname: JBVM02, role: claude-code}
+            - targets: ['192.168.0.204:9100']
+              labels: {hostname: JBVM03, role: minecraft}
+            - targets: ['192.168.0.206:9100']
+              labels: {hostname: JBVM01, role: jumpbox}
+          relabel_configs:
+            - source_labels: [__address__]
+              regex: '([^:]+):.*'
+              target_label: instance
+              replacement: '$1'
 
   # Alertmanager — config loaded from k8s Secret (webhook URL kept out of Git)
   # Secret 'alertmanager-main' in namespace 'monitoring' holds alertmanager.yaml
