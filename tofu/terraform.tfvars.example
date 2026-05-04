@@ -1,0 +1,2 @@
+# Copy to terraform.tfvars (gitignored) and fill in the token secret
+proxmox_api_token = "root@pam!claude=<token-secret>"
