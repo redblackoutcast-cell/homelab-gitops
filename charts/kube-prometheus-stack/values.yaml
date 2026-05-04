@@ -17,6 +17,12 @@ kube-prometheus-stack:
       runAsGroup: 472
       fsGroup: 472
     # Retrieve admin password: kubectl get secret -n monitoring kube-prometheus-stack-grafana -o jsonpath='{.data.admin-password}' | base64 -d
+    additionalDataSources:
+      - name: Loki
+        type: loki
+        url: http://loki.monitoring.svc.cluster.local:3100
+        access: proxy
+        isDefault: false
 
   # Prometheus — NodePort 30900 for direct PromQL access
   prometheus:
