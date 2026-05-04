@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  yamllint:
+    name: YAML lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install yamllint
+      - run: yamllint -c .yamllint.yaml .
+
+  helm-lint:
+    name: Helm lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/setup-helm@v4
+
+      - name: Cache Helm repository data
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/helm
+          key: helm-${{ hashFiles('charts/**/Chart.yaml', 'charts/**/Chart.lock') }}
+
+      - name: Lint Helm charts
+        run: |
+          for chart in charts/argocd charts/kube-prometheus-stack charts/loki charts/promtail charts/sealed-secrets; do
+            echo "--- $chart ---"
+            helm dependency update "$chart"
+            helm lint "$chart"
+          done
