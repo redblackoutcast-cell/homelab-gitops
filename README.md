@@ -66,7 +66,8 @@ Total guest allocation: 19 vCPU on a 16-thread host, a deliberate mild overcommi
 
 | Component | Tool | Why |
 |-----------|------|-----|
-| Hypervisor | Proxmox VE | KVM-based; REST API enables IaC provisioning (OpenTofu target for Phase 3) |
+| Hypervisor | Proxmox VE | KVM-based; all VMs and LXC container described as code via OpenTofu |
+| IaC | OpenTofu + bpg/proxmox | VM/LXC definitions in `tofu/`; existing infra imported into state; state kept locally on JBVM02 (gitignored) |
 | DNS + DHCP | Pi-hole v6 (LXC) | Network-wide ad-blocking + DHCP takeover; Virgin Media Hub's DHCP disabled entirely; LXC keeps footprint minimal |
 | Off-network access | Tailscale | Mesh VPN; single subnet router on JBDNS01 exposes the full LAN without port forwarding or per-host installation |
 | NAS | TrueNAS SCALE | ZFS for data integrity and snapshots; two-pool design maps durability requirements to hardware (RAIDZ1 for data, stripe for media) |
@@ -169,6 +170,21 @@ lxc.mount.entry: /dev/net/tun dev/net/tun none bind,create=file 0 0
 ```
 This must be set on the Proxmox host; it cannot be applied from inside the container.
 
+**bpg/proxmox: `node_name` is case-sensitive and forces VM replacement**
+Symptom: `tofu plan` after import shows all VMs as `-/+` (destroy + create replacement).
+Root cause: Proxmox stores the node name in uppercase (`JBSRV01`); if the `.tf` file uses lowercase (`jbsrv01`), the provider treats it as a different value and marks `node_name` as a force-replacement diff.
+Fix: use the exact case that Proxmox reports — check with `pvesh get /nodes` on the host, or inspect the import state with `tofu state show`.
+
+**bpg/proxmox: `tofu import` hangs indefinitely if QEMU guest agent is enabled but not running**
+Symptom: `tofu import proxmox_virtual_environment_vm.<name> <node>/<vmid>` prints "Refreshing state..." and never completes.
+Root cause: the provider queries the QEMU guest agent for IP address and interface data during state refresh. If `agent: 1` or `agent: enabled=1` is set in the Proxmox VM config but `qemu-guest-agent` is not installed or not running in the guest, the provider waits indefinitely for agent responses.
+Fix: install `qemu-guest-agent` in the VM before importing (`sudo apt install -y qemu-guest-agent`). Alternatively, disable the agent in the Proxmox VM config (`qm set <vmid> --agent 0`) if you don't want the integration.
+
+**bpg/proxmox: `network_device` list object requires all fields including deprecated ones**
+Symptom: `tofu validate` fails with "attributes X, Y, Z are required" on the `network_device` list attribute; removing `enabled` (marked deprecated) causes "attribute enabled is required".
+Root cause: the provider schema marks `enabled` as both required and deprecated simultaneously. The object type requires every field to be present even if deprecated.
+Fix: include all fields (`bridge`, `model`, `enabled`, `disconnected`, `firewall`, `mac_address`, `mtu`, `queues`, `rate_limit`, `trunks`, `vlan_id`), setting unused ones to `null`. Keep `enabled = true` to satisfy the schema requirement.
+
 ---
 
 ## Roadmap
@@ -183,8 +199,8 @@ k3s single-node cluster, ArgoCD (self-managing), kube-prometheus-stack (Promethe
 
 ### Phase 3: IaC + GitOps polish
 - [x] **Sealed Secrets**: Alertmanager Discord webhook and Proxmox API token now committed as `SealedSecret` CRDs under `charts/secrets/`; controller in `kube-system` decrypts at apply time
-- [ ] **OpenTofu + Proxmox provider**: VM provisioning as code; replace manual `qm create`
-- [ ] **GitHub Actions CI**: Helm lint + YAML validation on every PR
+- [x] **OpenTofu + Proxmox provider**: all 4 VMs and 1 LXC container imported into state; `tofu plan` shows 0 destroys, 0 replacements
+- [x] **GitHub Actions CI**: Helm lint + YAML validation on every PR (`.github/workflows/ci.yaml`)
 
 ---
 
