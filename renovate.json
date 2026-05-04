@@ -4,6 +4,8 @@
   "schedule": ["every weekend"],
   "labels": ["dependencies"],
   "helm-values": {
-    "fileMatch": ["charts/.+/values\\.yaml$"]
+    "managerFilePatterns": [
+      "/charts/.+/values\\.yaml$/"
+    ]
   }
 }
