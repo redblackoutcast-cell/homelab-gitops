@@ -1,6 +1,7 @@
 extends: default
 ignore: |
   charts/*/charts/
+  charts/secrets/
 rules:
   line-length:
     max: 200
