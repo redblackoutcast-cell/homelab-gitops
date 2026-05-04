@@ -1,0 +1,56 @@
+loki:
+  deploymentMode: SingleBinary
+
+  loki:
+    auth_enabled: false
+    commonConfig:
+      replication_factor: 1
+    storage:
+      type: filesystem
+    schemaConfig:
+      configs:
+        - from: "2024-01-01"
+          store: tsdb
+          object_store: filesystem
+          schema: v13
+          index:
+            prefix: index_
+            period: 24h
+    compactor:
+      retention_enabled: true
+      delete_request_store: filesystem
+    limits_config:
+      retention_period: 168h   # 7 days
+
+  singleBinary:
+    replicas: 1
+    persistence:
+      enabled: true
+      storageClass: local-path
+      size: 10Gi
+
+  # Disable scalable-mode components — not used in SingleBinary
+  backend:
+    replicas: 0
+  read:
+    replicas: 0
+  write:
+    replicas: 0
+
+  # Disable caches — not worth the overhead for a single-node homelab
+  chunksCache:
+    enabled: false
+  resultsCache:
+    enabled: false
+
+  # Disable bundled MinIO — using local filesystem storage
+  minio:
+    enabled: false
+
+  # Disable bundled Grafana — already deployed via kube-prometheus-stack
+  grafana:
+    enabled: false
+
+  # Disable nginx gateway — Promtail connects directly to port 3100
+  gateway:
+    enabled: false
